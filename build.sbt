@@ -5,6 +5,6 @@ lazy val `async-mock` = (project in file("."))
     scalaVersion := "2.12.8",
     libraryDependencies ++= {
       import Dependencies._
-      akka ++ test ++ json
+      akka ++ test ++ json ++ logging
     }
   )

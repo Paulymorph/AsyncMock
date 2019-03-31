@@ -4,10 +4,11 @@ import akka.http.scaladsl.server.Route
 
 import scala.concurrent.Future
 
-trait Manager {
-  def startEndpoint(port: Int, route: Route): Future[Unit]
-  def stopEndpoint(port: Int): Future[Unit]
-  def replaceEndpoint(port: Int, newRoute: Route): Future[Unit]
+trait EndpointManager {
+  def startEndpoint(port: Int, route: Route): Future[Either[PortAlreadyInUse, Unit]]
+  def stopEndpoint(port: Int): Future[Either[NoEndpointStartedOnPort, Unit]]
+  def replaceEndpoint(port: Int, newRoute: Route): Future[Either[NoEndpointStartedOnPort, Unit]]
+  def startOrReplaceEndpoint(port: Int, route: Route): Future[Unit]
 }
 
 case class PortAlreadyInUse(port: Int) extends RuntimeException {
