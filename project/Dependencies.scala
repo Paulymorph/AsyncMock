@@ -6,6 +6,7 @@ object Dependencies {
     val httpVersion = "10.1.7"
     "com.typesafe.akka" %% "akka-stream" % streamVersion ::
       "com.typesafe.akka" %% "akka-http" % httpVersion ::
+      "de.heikoseeberger" %% "akka-http-circe" % "1.25.2" ::
       Nil
   }
 
@@ -19,7 +20,7 @@ object Dependencies {
   }
 
   val json = {
-    val circeVersion = "0.10.0"
+    val circeVersion = "0.10.1"
 
     ("io.circe" %% "circe-core" ::
       "io.circe" %% "circe-generic" ::
