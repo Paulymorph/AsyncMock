@@ -1,4 +1,4 @@
-package paulymorph.mock.configuration.sse
+package paulymorph.mock.configuration.stub
 
 sealed trait Predicate
 

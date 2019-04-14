@@ -1,10 +1,11 @@
 package paulymorph.mock.configuration
 
 import akka.NotUsed
-import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.model.ws.TextMessage
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import akka.stream.scaladsl.Source
-import paulymorph.mock.configuration.sse._
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import paulymorph.mock.configuration.stub._
 
 trait Routable[T] {
   def toRoute(value: T): Route
@@ -22,34 +23,43 @@ object Routable {
 
   import DirectableSyntax.DirectableOps
   import RoutableSyntax.RoutableOps
-  import SourcableSyntax.SourcableOps
 
-  implicit lazy val sseConfigRoutable: Routable[SseConfiguration] = configuration => {
+  implicit lazy val sseConfigRoutable: Routable[StubConfiguration] = configuration => {
     import akka.http.scaladsl.server.Directives._
     configuration.stubs.map(_.toRoute).fold(reject)(_ ~ _)
   }
 
-  implicit lazy val sseStubRoutable: Routable[SseStub] = (stub: SseStub) => {
-    import Sourcable.reponseSourcable
-    import Directable.predicateDirectable
-    import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
-    import akka.http.scaladsl.server.Directives._
-    import scala.concurrent.duration._
-
-    stub.predicate.toDirective(implicitly) {
+  implicit lazy val responseRoutable: Routable[Response] = {
+    case response: SseEventsResponse =>
+      import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
+      import scala.concurrent.duration._
       complete {
-        stub.response.toSource[ServerSentEvent]
+        val source = Source(response.events.toVector)
+        source
           .takeWithin(5 seconds)
       }
+    case response: WebSocketEventsResponse =>
+      val source = Source(response.events.toVector)
+          .map(message => TextMessage(message.toString))
+      handleWebSocketMessages(Flow.fromSinkAndSource(Sink.ignore, source))
+  }
+
+  implicit lazy val responseStubRoutable: Routable[ResponseStub] = (stub: ResponseStub) => {
+    val predicateDirective = stub.predicates.foldLeft(pass) { case (accDirective, predicate) =>
+      accDirective & predicate.toDirective(Directable.predicateDirectable)
+    }
+
+    predicateDirective {
+        stub.response.toRoute
     }
   }
 
   implicit lazy val stubRoutable: Routable[Stub] = {
-    case stub: SseStub => stub.toRoute
+    case stub: ResponseStub => stub.toRoute
   }
 
   implicit lazy val mockRoutable: Routable[MockConfiguration] = {
-    case mock: SseConfiguration => mock.toRoute
+    case mock: StubConfiguration => mock.toRoute
   }
 }
 
@@ -77,10 +87,6 @@ trait Sourcable[T, E] {
 }
 
 object Sourcable {
-  implicit lazy val reponseSourcable: Sourcable[Response, ServerSentEvent] = {
-    case SequenceResponse(events) =>
-      Source(events.toVector)
-  }
 }
 
 object SourcableSyntax {
