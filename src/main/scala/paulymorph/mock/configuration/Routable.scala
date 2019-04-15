@@ -24,7 +24,7 @@ object Routable {
   import DirectableSyntax.DirectableOps
   import RoutableSyntax.RoutableOps
 
-  implicit lazy val sseConfigRoutable: Routable[StubConfiguration] = configuration => {
+  implicit lazy val stubConfigRoutable: Routable[StubConfiguration] = configuration => {
     import akka.http.scaladsl.server.Directives._
     configuration.stubs.map(_.toRoute).fold(reject)(_ ~ _)
   }
@@ -32,6 +32,7 @@ object Routable {
   implicit lazy val responseRoutable: Routable[Response] = {
     case response: SseEventsResponse =>
       import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
+
       import scala.concurrent.duration._
       complete {
         val source = Source(response.events.toVector)

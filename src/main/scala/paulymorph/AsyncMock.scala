@@ -3,7 +3,7 @@ package paulymorph
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.Logger
-import paulymorph.mock.manager.AdminMockConfigurationManager
+import paulymorph.mock.manager.{AdminMockConfigurationManager, EndpointManagerImpl}
 
 object AsyncMock {
   implicit val actorSystem = ActorSystem("default")
@@ -14,10 +14,11 @@ object AsyncMock {
     logger.info("Starting AsyncMock...")
 
     val adminPort = 2525
-    val endpointManager = AdminMockConfigurationManager(adminPort)
+    val endpointManager = new EndpointManagerImpl
+    val adminMockManager = AdminMockConfigurationManager(adminPort, endpointManager)
 
     for {
-      _ <- endpointManager.start
+      _ <- adminMockManager.start
       _ = logger.info(s"Server successfully started! Visit http://localhost:$adminPort")
     } yield ()
   }
