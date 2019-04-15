@@ -1,0 +1,49 @@
+openapi: 3.0.0
+info:
+  title: AsyncMock management API
+  description: API for mocks management.
+  version: 0.1.0
+
+paths:
+  /mock:
+    post:
+      summary: Creates a mock.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MockConfiguration'
+      responses:
+        201:
+          description: The mock was created successfully.
+  /mock/{port}:
+    parameters:
+      - in: path
+        name: port
+        schema:
+          type: integer
+        example: 6000
+        required: true
+        description: Port of the mock
+    get:
+      summary: Gets current mock at the port.
+      responses:
+        200:
+          description: Successfully got the mock on the specified port.
+          content:
+            application/json:
+              schema:
+                $ref: '#components/schemas/MockConfiguration'
+    delete:
+      summary: Remove a mock at the port.
+      responses:
+        200:
+          description: Successfully removed the mock on the specified port.
+          content:
+            application/json:
+              schema:
+                $ref: '#components/schemas/MockConfiguration'
+components:
+  schemas:
+    MockConfiguration
