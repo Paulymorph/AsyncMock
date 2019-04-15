@@ -1,3 +1,5 @@
 *.iml
 *.idea*
 *target*
+/src/main/resources/swagger/*
+!src/main/resources/swagger/swagger.yaml

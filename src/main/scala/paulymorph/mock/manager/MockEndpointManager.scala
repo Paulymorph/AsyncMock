@@ -1,13 +1,13 @@
 package paulymorph.mock.manager
 
-import paulymorph.mock.configuration.StubConfiguration
+import paulymorph.mock.configuration.MockConfiguration
 
 import scala.concurrent.Future
 
 trait MockEndpointManager {
-  def addMock(mock: StubConfiguration): Future[Unit]
-  def deleteMock(port: Int): Future[StubConfiguration]
-  def getMock(port: Int): Future[StubConfiguration]
+  def addMock(mock: MockConfiguration): Future[Unit]
+  def deleteMock(port: Int): Future[MockConfiguration]
+  def getMock(port: Int): Future[MockConfiguration]
 }
 
 case class PortAlreadyInUse(port: Int) extends RuntimeException {
