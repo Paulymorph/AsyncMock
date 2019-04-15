@@ -1,8 +1,8 @@
 import sbt._
 
 object Dependencies {
+  val streamVersion = "2.5.20"
   val akka = {
-    val streamVersion = "2.5.19"
     val httpVersion = "10.1.7"
     "com.typesafe.akka" %% "akka-stream" % streamVersion ::
       "com.typesafe.akka" %% "akka-http" % httpVersion ::
@@ -16,6 +16,7 @@ object Dependencies {
     "org.scalactic" %% "scalactic" % scalatestVersion ::
       "org.scalatest" %% "scalatest" % scalatestVersion % Test ::
       "org.scalamock" %% "scalamock" % scalamockVersion % Test ::
+      "com.typesafe.akka" %% "akka-stream-testkit" % streamVersion % Test ::
       Nil
   }
 

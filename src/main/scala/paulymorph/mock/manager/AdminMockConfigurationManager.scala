@@ -2,14 +2,12 @@ package paulymorph.mock.manager
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
 import akka.http.scaladsl.server.directives.LoggingMagnet
 import akka.http.scaladsl.server.{Route, RouteResult}
 import akka.stream.Materializer
 import com.typesafe.scalalogging.Logger
-import paulymorph.mock.configuration.stub._
-import paulymorph.mock.configuration.{MockConfiguration, StubConfiguration}
+import paulymorph.mock.configuration.MockConfiguration
 
 import scala.concurrent.Future
 
@@ -20,7 +18,7 @@ case class AdminMockConfigurationManager(adminPort: Int, endpointManager: MockEn
   import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
   import paulymorph.mock.configuration.JsonUtils._
 
-  implicit val executionContext = actorSystem.dispatcher
+  private implicit val executionContext = actorSystem.dispatcher
 
   val adminRoute: Route = pathPrefix("mock") {
     (post & entity(as[MockConfiguration])) { stub =>
@@ -35,19 +33,6 @@ case class AdminMockConfigurationManager(adminPort: Int, endpointManager: MockEn
       delete {
         complete(endpointManager.deleteMock(port))
       }
-    } ~
-    get {
-      import io.circe.parser.parse
-      import io.circe.syntax._
-      import paulymorph.mock.configuration.stub.{SseEventsResponse, WebSocketEventsResponse}
-
-      val sseStub = ResponseStub(Seq.empty, SseEventsResponse(Seq(ServerSentEvent("sse"))))
-      val wsStub = ResponseStub(Seq.empty, WebSocketEventsResponse(Seq(parse("404").right.get)))
-      complete {
-        Seq(StubConfiguration(123, Seq(sseStub)).asJson,
-          StubConfiguration(123, Seq(wsStub)).asJson
-        )
-      }
     }
   }
 
@@ -59,7 +44,7 @@ case class AdminMockConfigurationManager(adminPort: Int, endpointManager: MockEn
     Http().bindAndHandle(handler = logDirective(adminRoute ~ swaggerRoute), port = adminPort, interface = "localhost")
       .map(_ => ())
 
-  val logDirective = logRequestResult({
+  private val logDirective = logRequestResult({
     def logRequestAndResponse(req: HttpRequest)(res: RouteResult): Unit = {
       logger.info(req.toString)
       logger.info(res.toString)

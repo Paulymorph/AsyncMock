@@ -1,10 +1,11 @@
-package paulymorph.mock.configuration
+package paulymorph.mock.configuration.route
 
 import akka.NotUsed
-import akka.http.scaladsl.model.ws.TextMessage
+import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Flow, Source}
+import paulymorph.mock.configuration._
 import paulymorph.mock.configuration.stub._
 
 trait Routable[T] {
@@ -34,15 +35,17 @@ object Routable {
       import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 
       import scala.concurrent.duration._
+
       complete {
-        val source = Source(response.events.toVector)
-        source
-          .takeWithin(5 seconds)
+        DelayedSource.createMessageLike(response.events)
+          .map(_.toSse)
+          .takeWithin(response.timeout.getOrElse(10.minutes))
       }
     case response: WebSocketEventsResponse =>
-      val source = Source(response.events.toVector)
-          .map(message => TextMessage(message.toString))
-      handleWebSocketMessages(Flow.fromSinkAndSource(Sink.ignore, source))
+      import scala.concurrent.duration._
+      val source = DelayedSource.createMessageLike(response.events)
+          .map(_.toWs)
+      handleWebSocketMessages(Flow[Message].mapConcat(_ => Nil).merge(source).takeWithin(response.timeout.getOrElse(10.minutes)))
   }
 
   implicit lazy val responseStubRoutable: Routable[ResponseStub] = (stub: ResponseStub) => {
