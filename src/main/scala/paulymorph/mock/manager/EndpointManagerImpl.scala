@@ -5,7 +5,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.Materializer
 import com.typesafe.scalalogging.Logger
-import paulymorph.mock.configuration.{MockConfiguration, Routable}
+import paulymorph.mock.configuration.MockConfiguration
+import paulymorph.mock.configuration.route.Routable
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -13,7 +14,7 @@ class EndpointManagerImpl(implicit actorSystem: ActorSystem, materializer: Mater
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
 
   import EndpointManagerImpl.portBindings
-  import paulymorph.mock.configuration.RoutableSyntax.RoutableOps
+  import paulymorph.mock.configuration.route.RoutableSyntax.RoutableOps
 
   override def addMock(mock: MockConfiguration): Future[Unit] = {
     if (portBindings.contains(mock.port))
