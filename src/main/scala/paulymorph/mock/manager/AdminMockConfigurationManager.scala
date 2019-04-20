@@ -56,7 +56,7 @@ case class AdminMockConfigurationManager(adminPort: Int, endpointManager: MockEn
   } ~ getFromResourceDirectory("swagger")
 
   def start: Future[Unit] =
-    Http().bindAndHandle(handler = logDirective(adminRoute ~ swaggerRoute), port = adminPort, interface = "localhost")
+    Http().bindAndHandle(handler = logDirective(adminRoute ~ swaggerRoute), port = adminPort, interface = "0.0.0.0")
       .map(_ => ())
 
   val logDirective = logRequestResult({
