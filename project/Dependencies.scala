@@ -2,8 +2,8 @@ import sbt._
 
 object Dependencies {
   val streamVersion = "2.5.20"
+  val httpVersion = "10.1.7"
   val akka = {
-    val httpVersion = "10.1.7"
     "com.typesafe.akka" %% "akka-stream" % streamVersion ::
       "com.typesafe.akka" %% "akka-http" % httpVersion ::
       "de.heikoseeberger" %% "akka-http-circe" % "1.25.2" ::
@@ -14,11 +14,12 @@ object Dependencies {
     val scalatestVersion = "3.0.5"
     val scalamockVersion = "4.1.0"
     "org.scalactic" %% "scalactic" % scalatestVersion ::
-      "org.scalatest" %% "scalatest" % scalatestVersion % Test ::
-      "org.scalamock" %% "scalamock" % scalamockVersion % Test ::
-      "com.typesafe.akka" %% "akka-stream-testkit" % streamVersion % Test ::
+      "org.scalatest" %% "scalatest" % scalatestVersion ::
+      "org.scalamock" %% "scalamock" % scalamockVersion ::
+      "com.typesafe.akka" %% "akka-stream-testkit" % streamVersion ::
+      "com.typesafe.akka" %% "akka-http-testkit" % httpVersion ::
       Nil
-  }
+  }.map(_ % Test)
 
   val json = {
     val circeVersion = "0.10.1"

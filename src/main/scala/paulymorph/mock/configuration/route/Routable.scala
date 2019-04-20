@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.{Directive0, Route}
 import akka.stream.scaladsl.{Flow, Source}
 import paulymorph.mock.configuration._
 import paulymorph.mock.configuration.stub._
+import paulymorph.utils.Directives
 
 trait Routable[T] {
   def toRoute(value: T): Route
@@ -54,7 +55,7 @@ object Routable {
     }
 
     predicateDirective {
-        stub.response.toRoute
+        Directives.cyclic(stub.responses.map(_.toRoute))
     }
   }
 

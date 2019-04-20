@@ -8,7 +8,7 @@ import scala.concurrent.duration.FiniteDuration
 
 sealed trait Stub
 
-case class ResponseStub(predicates: Seq[Predicate], response: Response) extends Stub
+case class ResponseStub(predicates: Seq[Predicate], responses: Seq[Response]) extends Stub
 
 sealed trait Response
 
