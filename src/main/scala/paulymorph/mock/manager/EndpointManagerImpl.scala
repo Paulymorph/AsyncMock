@@ -24,7 +24,7 @@ class EndpointManagerImpl(implicit actorSystem: ActorSystem, materializer: Mater
         binding <- Http().bindAndHandle(handler = mock.toRoute(Routable.mockRoutable), port = mock.port, interface = "localhost")
         _ = portBindings += mock.port -> (binding, mock)
         _ = logger.info(s"Successfully bound on port ${mock.port}")
-      } yield Right()
+      } yield ()
     }
   }
 

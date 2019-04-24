@@ -1,8 +1,8 @@
 package paulymorph.utils
 
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.Route
 
-object Directives extends Directives {
+object Directives extends akka.http.scaladsl.server.Directives {
   def cyclic(innerRoutes: Seq[Route]): Route = {
     val iter: Iterator[Route] = Iterator.continually(innerRoutes).flatten
 
