@@ -21,10 +21,10 @@ else
     echo "Unzipping $downloaded_file to $unarchived_folder"
     unzip ${downloaded_file} -d ${unarchived_folder} >/dev/null
 
-    copy_source=${unarchived_folder}/swagger-ui-master/dist/
+    copy_source=${unarchived_folder}/swagger-ui-master/dist/*
     copy_dest=${swagger_destination}/
     echo "Copying contents of $copy_source to $copy_dest"
-    cp -rf ${unarchived_folder}/swagger-ui-master/dist/ ${swagger_destination}/
+    cp -rf ${copy_source} ${copy_dest}
 
     echo "Replacing petstore swagger on swagger.yaml"
     sed 's|https://petstore.swagger.io/v2/swagger.json|swagger.yaml|' ${index_file} >${index_file}.sed
