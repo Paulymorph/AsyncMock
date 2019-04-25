@@ -7,7 +7,6 @@ COPY . .
 
 RUN apk add --no-cache curl
 RUN bash ./scripts/download-swagger-ui.sh  ./src/main/resources/swagger
-RUN apk del curl
 
 RUN sbt compile
 
