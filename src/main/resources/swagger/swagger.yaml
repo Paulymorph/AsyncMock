@@ -23,7 +23,7 @@ paths:
         name: port
         schema:
           type: integer
-        example: 6000
+        example: 5000
         required: true
         description: Port of the mock
     get:
@@ -34,7 +34,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#components/schemas/MockConfiguration'
+                $ref: '#/components/schemas/MockConfiguration'
     delete:
       summary: Remove a mock at the port.
       responses:
@@ -43,7 +43,72 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#components/schemas/MockConfiguration'
+                $ref: '#/components/schemas/MockConfiguration'
 components:
   schemas:
-    MockConfiguration
+    MockConfiguration:
+      description: Mock configuration
+      type: object
+      example:
+        SSE:
+          port: 5000
+          stubs:
+            - predicates:
+                - equals:
+                    method: get
+                  startsWith:
+                    path: foo
+              responses:
+                - events:
+                    - data: '543'
+                      delay: 1 second
+                      id: '123'
+                      eventType: first
+                    - data: '123'
+                      delay: 3 second
+                      id: '1234'
+                      eventType: second
+                  type: sse
+                  timeout: 3 minutes
+                - events:
+                    - data: a
+                      delay: 1 second
+                      id: '123'
+                      eventType: first
+                    - data: b
+                      delay: 3 second
+                      id: '1234'
+                      eventType: second
+                  type: sse
+                  timeout: 3 minutes
+
+        WebSocket:
+          port: 5000
+          stubs:
+            - predicates: []
+              responses:
+                - events:
+                    - data:
+                        id: '123'
+                        eventType: first
+                      delay: 1 second
+                    - data:
+                        id: another
+                        eventType: second
+                      delay: 1 second
+                  type: websocket
+                  timeout: 3 minutes
+                - events:
+                    - data:
+                        id: a
+                        eventType: first
+                      delay: 1 second
+                    - data:
+                        id: bbbb
+                        eventType: second
+                      delay: 1 second
+                  type: websocket
+                  timeout: 3 minutes
+
+
+
