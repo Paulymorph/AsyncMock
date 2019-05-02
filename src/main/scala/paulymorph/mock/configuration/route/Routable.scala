@@ -1,6 +1,7 @@
 package paulymorph.mock.configuration.route
 
 import akka.NotUsed
+import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
@@ -45,7 +46,7 @@ object Routable {
     case response: WebSocketEventsResponse =>
       import scala.concurrent.duration._
       val source = DelayedSource.createMessageLike(response.events)
-          .map(_.toWs)
+        .map(_.toWs)
       handleWebSocketMessages(Flow[Message].mapConcat(_ => Nil).merge(source).takeWithin(response.timeout.getOrElse(10.minutes)))
   }
 
@@ -55,7 +56,7 @@ object Routable {
     }
 
     predicateDirective {
-        Directives.cyclic(stub.responses.map(_.toRoute))
+      Directives.cyclic(stub.responses.map(_.toRoute))
     }
   }
 
@@ -73,10 +74,60 @@ trait Directable[T] {
 }
 
 object Directable {
+
+  import DirectableSyntax._
   import akka.http.scaladsl.server.Directives._
+
   implicit lazy val predicateDirectable: Directable[Predicate] = {
-    case All => pass
+    case And(predicates) => predicates.map(_.toDirective(predicateDirectable)).fold(pass)(_ & _)
+    case Or(predicates) => predicates.map(_.toDirective(predicateDirectable)).fold(pass)(_ | _)
+
+    case Equals(MethodExpectation(expectedMethod)) =>
+      method(HttpMethods.getForKeyCaseInsensitive(expectedMethod).getOrElse(???))
+    case Contains(MethodExpectation(expectedMethod)) =>
+      method(HttpMethods.getForKeyCaseInsensitive(expectedMethod).getOrElse(???))
+    case StartsWith(MethodExpectation(expectedMethod)) =>
+      method(HttpMethods.getForKeyCaseInsensitive(expectedMethod).getOrElse(???))
+
+    case Equals(PathExpectation(expectedPath)) =>
+      path(expectedPath)
+    case Equals(BodyExpectation(expectedBody)) => ???
+    case Equals(QueryExpectation(expectedQuery)) =>
+      parameterMap.flatMap { actualParams =>
+        validate(expectedQuery.forall(e => actualParams.toSet.contains(e)), s"Query $actualParams did not equal $expectedQuery")
+      }
+
+    case Contains(PathExpectation(expectedPath)) =>
+      extractUri.flatMap { uri =>
+        val fullPath = uri.toRelative.path.dropChars(1).toString
+        validate(fullPath.contains(expectedPath), s"Path $fullPath did not contain $expectedPath")
+      }
+    case Contains(BodyExpectation(expectedBody)) => ???
+    case Contains(QueryExpectation(expectedQuery)) =>
+      parameterMap.flatMap { actualParams =>
+        validate(expectedQuery.forall {
+          case (key, expectedSubstring) =>
+            actualParams.get(key)
+              .exists(_.contains(expectedSubstring))
+        }, s"Query $actualParams did not contain $expectedQuery")
+      }
+
+    case StartsWith(BodyExpectation(expectedBody)) => ???
+    case StartsWith(PathExpectation(expectedPath)) =>
+      extractUri.flatMap { uri =>
+        val fullPath = uri.toRelative.path.dropChars(1).toString
+        validate(fullPath.startsWith(expectedPath), s"Path $fullPath did not match prefix $expectedPath")
+      }
+    case StartsWith(QueryExpectation(expectedQuery)) =>
+      parameterMap.flatMap { actualParams =>
+        validate(expectedQuery.forall {
+          case (key, expectedPrefix) =>
+            actualParams.get(key)
+              .exists(_.startsWith(expectedPrefix))
+        }, s"Query $actualParams did not startWith $expectedQuery")
+      }
   }
+
 }
 
 object DirectableSyntax {

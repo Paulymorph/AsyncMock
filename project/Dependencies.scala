@@ -22,7 +22,7 @@ object Dependencies {
   }.map(_ % Test)
 
   val json = {
-    val circeVersion = "0.10.1"
+    val circeVersion = "0.11.1"
 
     ("io.circe" %% "circe-core" ::
       "io.circe" %% "circe-generic" ::

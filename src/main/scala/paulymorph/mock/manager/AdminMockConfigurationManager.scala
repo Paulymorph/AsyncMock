@@ -1,13 +1,17 @@
 package paulymorph.mock.manager
 
+import java.util.concurrent.atomic.AtomicReference
+
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
-import akka.http.scaladsl.server.directives.LoggingMagnet
-import akka.http.scaladsl.server.{Route, RouteResult}
+import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import com.typesafe.scalalogging.Logger
 import paulymorph.mock.configuration.MockConfiguration
+import paulymorph.utils.Directives
 
 import scala.concurrent.Future
 
@@ -40,21 +44,22 @@ case class AdminMockConfigurationManager(adminPort: Int, endpointManager: MockEn
     getFromResource("swagger/index.html")
   } ~ getFromResourceDirectory("swagger")
 
+  private val atomicBinding = new AtomicReference[Option[ServerBinding]](None)
+
   def start: Future[Unit] =
     Http().bindAndHandle(handler = logDirective(adminRoute ~ swaggerRoute), port = adminPort, interface = "0.0.0.0")
+      .map(binding => atomicBinding.set(Some(binding)))
       .map(_ => ())
-
-  private val logDirective = logRequestResult({
-    def logRequestAndResponse(req: HttpRequest)(res: RouteResult): Unit = {
-      logger.info(req.toString)
-      logger.info(res.toString)
-    }
-
-    LoggingMagnet(_ => logRequestAndResponse)
-  })
 
   private val logger = Logger[AdminMockConfigurationManager]
 
+  private val logDirective = Directives.logRequestResponse(logger)
 
-  def stop: Future[Unit] = Future.failed(???)
+
+  def stop: Future[Unit] = for {
+    _ <- endpointManager.deleteMocks
+    _ <- atomicBinding.get().fold(Future.successful[Done](Done)) { binding =>
+      binding.unbind()
+    }
+  } yield ()
 }

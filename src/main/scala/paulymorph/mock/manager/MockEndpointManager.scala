@@ -8,6 +8,7 @@ trait MockEndpointManager {
   def addMock(mock: MockConfiguration): Future[Unit]
   def deleteMock(port: Int): Future[MockConfiguration]
   def getMock(port: Int): Future[MockConfiguration]
+  def deleteMocks: Future[Seq[MockConfiguration]]
 }
 
 case class PortAlreadyInUse(port: Int) extends RuntimeException {
