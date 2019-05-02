@@ -94,12 +94,13 @@ object Directable {
     case Equals(BodyExpectation(expectedBody)) => ???
     case Equals(QueryExpectation(expectedQuery)) =>
       parameterMap.flatMap { actualParams =>
-        validate(expectedQuery.forall(e => actualParams.toSet.contains(e)), "query did not match")
+        validate(expectedQuery.forall(e => actualParams.toSet.contains(e)), s"Query $actualParams did not equal $expectedQuery")
       }
 
     case Contains(PathExpectation(expectedPath)) =>
-      path(Segment).flatMap { actualPath =>
-        validate(actualPath.contains(expectedPath), "Path did not match")
+      extractUri.flatMap { uri =>
+        val fullPath = uri.toRelative.path.dropChars(1).toString
+        validate(fullPath.contains(expectedPath), s"Path $fullPath did not contain $expectedPath")
       }
     case Contains(BodyExpectation(expectedBody)) => ???
     case Contains(QueryExpectation(expectedQuery)) =>
@@ -108,13 +109,14 @@ object Directable {
           case (key, expectedSubstring) =>
             actualParams.get(key)
               .exists(_.contains(expectedSubstring))
-        }, "query did not match")
+        }, s"Query $actualParams did not contain $expectedQuery")
       }
 
     case StartsWith(BodyExpectation(expectedBody)) => ???
     case StartsWith(PathExpectation(expectedPath)) =>
-      path(Segment).flatMap { actualPath =>
-        validate(actualPath.startsWith(expectedPath), "Path did not match")
+      extractUri.flatMap { uri =>
+        val fullPath = uri.toRelative.path.dropChars(1).toString
+        validate(fullPath.startsWith(expectedPath), s"Path $fullPath did not match prefix $expectedPath")
       }
     case StartsWith(QueryExpectation(expectedQuery)) =>
       parameterMap.flatMap { actualParams =>
@@ -122,7 +124,7 @@ object Directable {
           case (key, expectedPrefix) =>
             actualParams.get(key)
               .exists(_.startsWith(expectedPrefix))
-        }, "query did not match")
+        }, s"Query $actualParams did not startWith $expectedQuery")
       }
   }
 
