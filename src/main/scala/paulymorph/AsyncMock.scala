@@ -16,7 +16,7 @@ class AsyncMock(adminPort: Int, startingMocks: Seq[MockConfiguration] = Seq.empt
   def start: Future[Unit] = {
     for {
       _ <- adminMockManager.start
-      _ = logger.info(s"Server successfully started! Visit http://localhost:$adminPort")
+      _ = logger.info(s"Server successfully started! Visit http://localhost:$adminPort/swagger")
     } yield ()
   }
 
