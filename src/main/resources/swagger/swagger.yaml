@@ -49,66 +49,251 @@ components:
     MockConfiguration:
       description: Mock configuration
       type: object
+      properties:
+        port:
+          type: number
+          example: 5000
+        stubs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stub'
+    Stub:
+      type: object
+      properties:
+        predicates:
+          description: Predicates to match the incoming HTTP requests to the server
+          type: array
+          items:
+            $ref: '#/components/schemas/HttpPredicate'
+        responses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Response'
+    HttpPredicate:
+      type: object
+      anyOf:
+        - $ref: '#/components/schemas/HttpEquals'
+        - $ref: '#/components/schemas/HttpContains'
+        - $ref: '#/components/schemas/HttpStartsWith'
+        - $ref: '#/components/schemas/HttpAnd'
+        - $ref: '#/components/schemas/HttpOr'
       example:
-        SSE:
-          port: 5000
-          stubs:
-            - predicates:
-                - equals:
-                    method: get
-                  startsWith:
-                    path: foo
-              responses:
-                - events:
-                    - data: '543'
-                      delay: 1 second
-                      id: '123'
-                      eventType: first
-                    - data: '123'
-                      delay: 3 second
-                      id: '1234'
-                      eventType: second
-                  type: sse
-                  timeout: 3 minutes
-                - events:
-                    - data: a
-                      delay: 1 second
-                      id: '123'
-                      eventType: first
-                    - data: b
-                      delay: 3 second
-                      id: '1234'
-                      eventType: second
-                  type: sse
-                  timeout: 3 minutes
-
-        WebSocket:
-          port: 5000
-          stubs:
-            - predicates: []
-              responses:
-                - events:
-                    - data:
-                        id: '123'
-                        eventType: first
-                      delay: 1 second
-                    - data:
-                        id: another
-                        eventType: second
-                      delay: 1 second
-                  type: websocket
-                  timeout: 3 minutes
-                - events:
-                    - data:
-                        id: a
-                        eventType: first
-                      delay: 1 second
-                    - data:
-                        id: bbbb
-                        eventType: second
-                      delay: 1 second
-                  type: websocket
-                  timeout: 3 minutes
-
-
-
+        equals:
+          method: get
+        startsWith:
+          path:
+            "foo"
+    HttpEquals:
+      type: object
+      required: [equals]
+      properties:
+        equals:
+          $ref: '#/components/schemas/RequestExpectation'
+    HttpContains:
+      type: object
+      required: [contains]
+      properties:
+        contains:
+          $ref: '#/components/schemas/RequestExpectation'
+    HttpStartsWith:
+      type: object
+      required: [startsWith]
+      properties:
+        startsWith:
+          $ref: '#/components/schemas/RequestExpectation'
+    HttpAnd:
+      type:
+        object
+      required: [and]
+      properties:
+        and:
+          type:
+            array
+          items:
+            $ref: '#/components/schemas/HttpPredicate'
+    HttpOr:
+      type:
+        object
+      required: [or]
+      properties:
+        or:
+          type:
+            array
+          items:
+            $ref: '#/components/schemas/HttpPredicate'
+    RequestExpectation:
+      type: object
+      anyOf:
+        - $ref: '#/components/schemas/BodyExpectation'
+        - $ref: '#/components/schemas/PathExpectation'
+        - $ref: '#/components/schemas/MethodExpectation'
+        - $ref: '#/components/schemas/QueryExpectation'
+      example:
+        body:
+          key: value
+        path: path/path
+        method: get
+        query:
+          a: b
+    BodyExpectation:
+      type: object
+      required: [body]
+      properties:
+        body:
+          $ref: '#/components/schemas/JsonLike'
+    PathExpectation:
+      type: object
+      required: [path]
+      properties:
+        body:
+          type: string
+    MethodExpectation:
+      type: object
+      required: [method]
+      properties:
+        method:
+          type: string
+          enum:
+            - get
+            - post
+            - put
+            - delete
+            - head
+            - patch
+            - trace
+      example:
+        method: get
+    QueryExpectation:
+      type: object
+    Response:
+      $ref: '#/components/schemas/EventsResponse'
+    EventsResponse:
+      oneOf:
+        - $ref: '#/components/schemas/SseEventsResponse'
+        - $ref: '#/components/schemas/WsEventsResponse'
+      properties:
+        type:
+          type: string
+          enum: [sse, websocket]
+      discriminator:
+        propertyName: type
+        mapping:
+          sse: '#/components/schemas/SseEventsResponse'
+          websocket: '#/components/schemas/WsEventsResponse'
+    SseEventsResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [sse]
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SseEvent'
+        timeout:
+          $ref: '#/components/schemas/Duration'
+    JsonLike:
+      oneOf:
+        - type: object
+        - type: string
+        - type: number
+      example:
+        key: value
+    EventLike:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/JsonLike'
+        delay:
+          $ref: '#/components/schemas/Duration'
+      required: [data]
+    Duration:
+      type: string
+      pattern: '\d+ (millis?|seconds?|minutes?)'
+      example: '2 seconds'
+    SseEvent:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/EventLike'
+      required: [data]
+      properties:
+        id:
+          type: string
+        eventType:
+          type: string
+    WsEventsResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [websocket]
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/WsEvent'
+        reactions:
+          type:
+            array
+          items:
+            $ref: '#/components/schemas/WsReaction'
+        timeout:
+          $ref: '#/components/schemas/Duration'
+    WsEvent:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/EventLike'
+      required: [data]
+    WsReaction:
+      type:
+        object
+      properties:
+        predicates:
+          type: array
+          items:
+            $ref: '#/components/schemas/WsEventPredicate'
+        reaction:
+          type: array
+          items:
+            $ref: '#/components/schemas/WsEvent'
+    WsEventPredicate:
+      type: object
+      anyOf:
+        - $ref: '#/components/schemas/WsEquals'
+        - $ref: '#/components/schemas/WsContains'
+        - $ref: '#/components/schemas/WsStartsWith'
+        - $ref: '#/components/schemas/WsAnd'
+        - $ref: '#/components/schemas/WsOr'
+    WsEquals:
+      type: object
+      required: [equals]
+      properties:
+        equals:
+          $ref: '#/components/schemas/JsonLike'
+    WsContains:
+      type: object
+      required: [contains]
+      properties:
+        contains:
+          $ref: '#/components/schemas/JsonLike'
+    WsStartsWith:
+      type: object
+      required: [startsWith]
+      properties:
+        startsWith:
+          $ref: '#/components/schemas/JsonLike'
+    WsAnd:
+      type: object
+      required: [and]
+      properties:
+        and:
+          type: array
+          items:
+            $ref: '#/components/schemas/WsEventPredicate'
+    WsOr:
+      type: object
+      required: [or]
+      properties:
+        or:
+          type: array
+          items:
+            $ref: '#/components/schemas/WsEventPredicate'

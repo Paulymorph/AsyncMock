@@ -24,8 +24,9 @@ class EndpointManagerImpl(implicit actorSystem: ActorSystem, materializer: Mater
     if (portBindings.contains(mock.port))
       Future.failed(PortAlreadyInUse(mock.port))
     else {
+      val route = mock.toRoute(Routable.mockRoutable)
       for {
-        binding <- Http().bindAndHandle(handler = loggerDirective(mock.toRoute(Routable.mockRoutable)), port = mock.port, interface = "localhost")
+        binding <- Http().bindAndHandle(handler = loggerDirective(route), port = mock.port, interface = "0.0.0.0")
         _ = portBindings += mock.port -> (binding, mock)
         _ = logger.info(s"Successfully bound on port ${mock.port}")
       } yield ()

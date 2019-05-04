@@ -2,12 +2,13 @@ package paulymorph.mock.configuration.route
 
 import akka.NotUsed
 import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.scaladsl.Source
 import paulymorph.mock.configuration._
 import paulymorph.mock.configuration.stub._
+import paulymorph.mock.configuration.stub.http._
+import paulymorph.mock.configuration.stub.websocket.WsReaction
 import paulymorph.utils.Directives
 
 trait Routable[T] {
@@ -47,16 +48,17 @@ object Routable {
       import scala.concurrent.duration._
       val source = DelayedSource.createMessageLike(response.events)
         .map(_.toWs)
-      handleWebSocketMessages(Flow[Message].mapConcat(_ => Nil).merge(source).takeWithin(response.timeout.getOrElse(10.minutes)))
+      handleWebSocketMessages(WsReaction.toFlow(response.reactions).merge(source).takeWithin(response.timeout.getOrElse(10.minutes)))
   }
 
   implicit lazy val responseStubRoutable: Routable[ResponseStub] = (stub: ResponseStub) => {
     val predicateDirective = stub.predicates.foldLeft(pass) { case (accDirective, predicate) =>
       accDirective & predicate.toDirective(Directable.predicateDirectable)
     }
+    val responseRoute = Directives.cyclic(stub.responses.map(_.toRoute))
 
     predicateDirective {
-      Directives.cyclic(stub.responses.map(_.toRoute))
+      responseRoute
     }
   }
 
@@ -78,7 +80,7 @@ object Directable {
   import DirectableSyntax._
   import akka.http.scaladsl.server.Directives._
 
-  implicit lazy val predicateDirectable: Directable[Predicate] = {
+  implicit lazy val predicateDirectable: Directable[HttpPredicate] = {
     case And(predicates) => predicates.map(_.toDirective(predicateDirectable)).fold(pass)(_ & _)
     case Or(predicates) => predicates.map(_.toDirective(predicateDirectable)).fold(pass)(_ | _)
 
@@ -140,9 +142,6 @@ object DirectableSyntax {
 
 trait Sourcable[T, E] {
   def toSource(value: T): Source[E, NotUsed]
-}
-
-object Sourcable {
 }
 
 object SourcableSyntax {

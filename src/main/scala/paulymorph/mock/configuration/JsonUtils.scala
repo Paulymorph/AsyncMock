@@ -4,7 +4,9 @@ import cats.syntax.functor._
 import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import paulymorph.mock.configuration.stub.{RequestExpectation, _}
+import paulymorph.mock.configuration.stub._
+import paulymorph.mock.configuration.stub.http.{CompoundHttpPredicate, HttpPredicate, LeafHttpPredicate, RequestExpectation}
+import paulymorph.mock.configuration.stub.websocket.{CompoundWsPredicate, WsContains, WsEquals, WsEventPredicate, WsReaction, WsStartsWith}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Try}
@@ -32,19 +34,19 @@ object JsonUtils {
   implicit lazy val responseStubEncoder: Encoder[ResponseStub] = deriveEncoder
   implicit lazy val responseStubDecoder: Decoder[ResponseStub] = deriveDecoder
 
-  implicit lazy val predicateEncoder: Encoder[Predicate] = Encoder.instance {
-    case predicate: LeafPredicate => predicate.asJson
-    case predicate: CompoundPredicate => predicate.asJson
+  implicit lazy val predicateEncoder: Encoder[HttpPredicate] = Encoder.instance {
+    case predicate: LeafHttpPredicate => predicate.asJson
+    case predicate: CompoundHttpPredicate => predicate.asJson
   }
-
-  implicit lazy val predicateDecoder: Decoder[Predicate] =
-    (c: HCursor) => {
-      val predicates: List[Decoder.Result[Predicate]] =
+  implicit lazy val predicateDecoder: Decoder[HttpPredicate] = {
+    import paulymorph.mock.configuration.stub.http._
+    c: HCursor => {
+      val predicates: List[Decoder.Result[HttpPredicate]] =
         c.get[Seq[RequestExpectation]]("equals").map(e => And(e.map(Equals))) ::
           c.get[Seq[RequestExpectation]]("startsWith").map(e => And(e.map(StartsWith))) ::
           c.get[Seq[RequestExpectation]]("contains").map(e => And(e.map(Contains))) ::
-          c.get[Seq[Predicate]]("or").map(Or) ::
-          c.get[Seq[Predicate]]("and").map(And) ::
+          c.get[Seq[HttpPredicate]]("or").map(Or) ::
+          c.get[Seq[HttpPredicate]]("and").map(And) ::
           Nil
 
       val resultPredicate = predicates.flatMap(_.toOption) match {
@@ -53,8 +55,10 @@ object JsonUtils {
       }
       Right(resultPredicate)
     }
+  }
 
-  implicit lazy val leafPredicateEncoder: Encoder[LeafPredicate] = { predicate =>
+  implicit lazy val leafPredicateEncoder: Encoder[LeafHttpPredicate] = { predicate =>
+    import paulymorph.mock.configuration.stub.http._
     def encodeLeaf(key: String): Json =
       Encoder.encodeMap[String, Json].apply(Map(key -> predicate.requestExpectation.asJson))
 
@@ -65,7 +69,8 @@ object JsonUtils {
     }
   }
 
-  implicit lazy val compoundPredicateEncoder: Encoder[CompoundPredicate] = { predicate =>
+  implicit lazy val compoundPredicateEncoder: Encoder[CompoundHttpPredicate] = { predicate =>
+    import paulymorph.mock.configuration.stub.http._
     def encodeCompound(key: String): Json =
       Encoder.encodeMap[String, Json].apply(Map(key -> predicate.predicates.asJson))
 
@@ -79,6 +84,7 @@ object JsonUtils {
 
   implicit lazy val requestExpectationsDecoder: Decoder[Seq[RequestExpectation]] =
     (c: HCursor) => {
+      import paulymorph.mock.configuration.stub.http._
       val expectations = c.get[Json]("body").map(BodyExpectation) ::
         c.get[String]("path").map(PathExpectation) ::
         c.get[String]("method").map(MethodExpectation) ::
@@ -107,10 +113,10 @@ object JsonUtils {
     (c: HCursor) =>
       for {
         responseType <- c.downField("type").as[String]
-        events <- c.downField("events").as[Seq[SseMessage]]
+        events <- c.downField("events").as[Option[Seq[SseMessage]]]
         timeout <- c.downField("timeout").as[Option[FiniteDuration]]
         result <- responseType match {
-          case "sse" => Right(SseEventsResponse(events, timeout))
+          case "sse" => Right(SseEventsResponse(events.getOrElse(Seq.empty), timeout))
           case _ => Left(DecodingFailure(s"$responseType is not sse!", c.history))
         }
       } yield result
@@ -126,10 +132,11 @@ object JsonUtils {
     (c: HCursor) =>
       for {
         responseType <- c.downField("type").as[String]
-        events <- c.downField("events").as[Seq[WsMessage]]
+        events <- c.downField("events").as[Option[Seq[WsMessage]]]
         timeout <- c.downField("timeout").as[Option[FiniteDuration]]
+        reactions <- c.downField("reactions").as[Option[Seq[WsReaction]]]
         result <- responseType match {
-          case "websocket" => Right(WebSocketEventsResponse(events, timeout))
+          case "websocket" => Right(WebSocketEventsResponse(events.getOrElse(Seq.empty), reactions.getOrElse(Seq.empty), timeout))
           case _ => Left(DecodingFailure(s"$responseType is not websocket!", c.history))
         }
       } yield result
@@ -147,4 +154,49 @@ object JsonUtils {
         case _ => Failure(new IllegalArgumentException(s"$string is not time!"))
       }
     )
+
+  implicit lazy val wsReactionEncoder: Encoder[WsReaction] = deriveEncoder
+  implicit lazy val wsReactionDecoder: Decoder[WsReaction] = deriveDecoder
+
+  implicit lazy val wsEventPredicateEncoder: Encoder[WsEventPredicate] = Encoder.instance {
+      case predicate: WsEquals => predicate.asJson
+      case predicate: WsContains => predicate.asJson
+      case predicate: WsStartsWith => predicate.asJson
+      case predicate: CompoundWsPredicate => predicate.asJson
+    }
+  implicit lazy val WsEventPredicateDecoder: Decoder[WsEventPredicate] = {
+    import paulymorph.mock.configuration.stub.websocket._
+    c: HCursor => {
+      val predicates: List[Decoder.Result[WsEventPredicate]] =
+        c.get[Json]("equals").map(WsEquals) ::
+          c.get[Json]("startsWith").map(WsStartsWith) ::
+          c.get[Json]("contains").map(WsContains) ::
+          c.get[Set[WsEventPredicate]]("or").map(Or) ::
+          c.get[Set[WsEventPredicate]]("and").map(And) ::
+          Nil
+
+      val resultPredicate = predicates.flatMap(_.toOption) match {
+        case single :: Nil => single
+        case predicatesList => And(predicatesList.toSet)
+      }
+      Right(resultPredicate)
+    }
+  }
+
+  implicit lazy val wsEqualsEncoder: Encoder[WsEquals] = deriveEncoder
+
+  implicit lazy val WsContainsEncoder: Encoder[WsContains] = deriveEncoder
+
+  implicit lazy val wsStartsWithEncoder: Encoder[WsStartsWith] = deriveEncoder
+
+  implicit lazy val compoundWsEncoder: Encoder[CompoundWsPredicate] = { predicate =>
+    import paulymorph.mock.configuration.stub.websocket._
+    def encodeCompound(key: String): Json =
+      Encoder.encodeMap[String, Json].apply(Map(key -> predicate.predicates.asJson))
+
+    predicate match {
+      case _: Or => encodeCompound("or")
+      case _: And => encodeCompound("and")
+    }
+  }
 }
