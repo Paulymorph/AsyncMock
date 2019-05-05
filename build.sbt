@@ -7,5 +7,7 @@ lazy val `async-mock` = (project in file("."))
       import Dependencies._
       akka ++ test ++ json ++ logging
     },
-    scalacOptions ++= "-Xfatal-warnings":: "-unchecked" :: "-deprecation" :: Nil
+    mainClass in assembly := Some("Main"),
+    assemblyJarName in assembly := s"${name.value}.jar",
+    scalacOptions ++= "-Xfatal-warnings" :: "-unchecked" :: "-deprecation" :: Nil
   )
