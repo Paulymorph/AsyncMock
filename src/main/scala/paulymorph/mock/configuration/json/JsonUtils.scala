@@ -1,12 +1,12 @@
-package paulymorph.mock.configuration
+package paulymorph.mock.configuration.json
 
-import cats.syntax.functor._
-import io.circe._
-import io.circe.generic.semiauto._
-import io.circe.syntax._
-import paulymorph.mock.configuration.stub._
+import cats.syntax.functor.toFunctorOps
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, DecodingFailure, Encoder, HCursor, Json}
 import paulymorph.mock.configuration.stub.http.{CompoundHttpPredicate, HttpPredicate, LeafHttpPredicate, RequestExpectation}
 import paulymorph.mock.configuration.stub.websocket.{CompoundWsPredicate, WsContains, WsEquals, WsEventPredicate, WsReaction, WsStartsWith}
+import paulymorph.mock.configuration.stub.{MockConfiguration, Response, ResponseStub, SseEventsResponse, SseMessage, Stub, StubConfiguration, WebSocketEventsResponse, WsMessage}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Try}

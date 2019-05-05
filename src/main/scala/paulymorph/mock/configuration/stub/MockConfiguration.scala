@@ -1,6 +1,4 @@
-package paulymorph.mock.configuration
-
-import paulymorph.mock.configuration.stub.Stub
+package paulymorph.mock.configuration.stub
 
 sealed trait MockConfiguration {
   def port: Int

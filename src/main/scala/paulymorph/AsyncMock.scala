@@ -3,8 +3,9 @@ package paulymorph
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.Logger
-import paulymorph.mock.configuration.MockConfiguration
-import paulymorph.mock.manager.{AdminMockConfigurationManager, EndpointManagerImpl}
+import paulymorph.mock.configuration.stub.MockConfiguration
+import paulymorph.mock.controller.AdminMockConfigurationController
+import paulymorph.mock.manager.EndpointManagerImpl
 
 import scala.concurrent.Future
 
@@ -29,7 +30,7 @@ class AsyncMock(adminPort: Int, startingMocks: Seq[MockConfiguration] = Seq.empt
 
   private val endpointManager = new EndpointManagerImpl
 
-  private val adminMockManager = AdminMockConfigurationManager(adminPort, endpointManager)
+  private val adminMockManager = AdminMockConfigurationController(adminPort, endpointManager)
 
   private val logger = Logger[AsyncMock]
 }
