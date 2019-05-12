@@ -48,7 +48,8 @@ object Routable {
       import scala.concurrent.duration._
       val source = DelayedSource.createMessageLike(response.events)
         .map(_.toWs)
-      handleWebSocketMessages(WsReaction.toFlow(response.reactions).merge(source).takeWithin(response.timeout.getOrElse(10.minutes)))
+      val incomingMessagesHandler = WsReaction.toFlow(response.reactions)
+      handleWebSocketMessages(incomingMessagesHandler.merge(source).takeWithin(response.timeout.getOrElse(10.minutes)))
   }
 
   implicit lazy val responseStubRoutable: Routable[ResponseStub] = (stub: ResponseStub) => {
