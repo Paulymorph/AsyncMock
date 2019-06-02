@@ -5,8 +5,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.Materializer
 import com.typesafe.scalalogging.Logger
-import paulymorph.mock.configuration.MockConfiguration
 import paulymorph.mock.configuration.route.Routable
+import paulymorph.mock.configuration.stub.MockConfiguration
 import paulymorph.utils.Directives
 
 import scala.collection.concurrent.TrieMap

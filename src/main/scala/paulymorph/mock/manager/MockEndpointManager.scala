@@ -1,6 +1,6 @@
 package paulymorph.mock.manager
 
-import paulymorph.mock.configuration.MockConfiguration
+import paulymorph.mock.configuration.stub.MockConfiguration
 
 import scala.concurrent.Future
 

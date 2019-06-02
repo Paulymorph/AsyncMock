@@ -1,0 +1,55 @@
+@startuml
+
+interface HttpPredicate
+interface RequestExpectation
+
+class BodyExpectation {
+    body: Json
+}
+class PathExpectation {
+    path: String
+}
+class MethodExpectation {
+    method: String
+}
+class QueryExpectation{
+    query: Map[String, String]
+}
+interface LeafHttpPredicate {
+  requestExpectation: RequestExpectation
+}
+
+class Equals{
+}
+class StartsWith{
+}
+class Contains{
+}
+interface CompoundHttpPredicate {
+  predicates: Seq[HttpPredicate]
+}
+
+class Or {
+}
+class And {
+}
+
+BodyExpectation -up-|> RequestExpectation
+PathExpectation -up-|> RequestExpectation
+MethodExpectation -up-|> RequestExpectation
+QueryExpectation -up-|> RequestExpectation
+
+LeafHttpPredicate -up-|> HttpPredicate
+LeafHttpPredicate o--down-> RequestExpectation
+
+StartsWith -up-|> LeafHttpPredicate
+Contains -up-|> LeafHttpPredicate
+Equals -up-|> LeafHttpPredicate
+
+CompoundHttpPredicate --|> HttpPredicate
+CompoundHttpPredicate o--> HttpPredicate
+
+Or -up|> CompoundHttpPredicate
+And -right|> CompoundHttpPredicate
+
+@enduml

@@ -1,0 +1,41 @@
+@startuml
+participant "Пользователь" as client
+participant "Мок" as mock
+participant "Интерфейс управления моками" as admin
+
+box "Мок-сервер" #LightBlue
+	participant admin
+	participant mock
+end box
+
+client -> admin: Создание SSE мока POST /mock
+client <- admin: Успешно создан
+
+client -> admin: GET /mock/{port}
+client <- admin: Мок
+
+client -> mock: Запрос SSE
+client <-- mock: Сообщение
+...
+client <-- mock: Сообщение
+
+client -> admin: Удаление мока DELETE /mock/{port}
+
+...
+...
+
+client -> admin: Создание WebSocket мока POST /mock
+client <- admin: Успешно создан
+
+client -> admin: GET /mock/{port}
+client <- admin: Мок
+
+client -> mock: Создание WebSocket соединения
+client <-- mock: Сообщение
+client --> mock: Сообщение
+...
+client <-- mock: Сообщение
+client -> mock: Закрытие WebSocket соединения
+
+client -> admin: Удаление мока DELETE /mock/{port}
+@enduml

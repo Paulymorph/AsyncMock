@@ -12,8 +12,8 @@ import scala.concurrent.duration._
 
 class JsonUtilsSpec extends FlatSpec with Matchers {
 
-  import JsonUtils._
   import org.scalatest.EitherValues._
+  import paulymorph.mock.configuration.json.JsonUtils._
 
   "JsonUtils" should "parse equals predicate" in {
     import paulymorph.mock.configuration.stub.http._

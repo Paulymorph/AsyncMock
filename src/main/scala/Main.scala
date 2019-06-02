@@ -1,6 +1,6 @@
 import com.typesafe.scalalogging.Logger
 import paulymorph.AsyncMock
-import paulymorph.mock.configuration.MockConfiguration
+import paulymorph.mock.configuration.stub.MockConfiguration
 
 import scala.concurrent.ExecutionContext
 import scala.io.Source
@@ -8,6 +8,7 @@ import scala.util.Try
 
 object Main {
   implicit val ec = ExecutionContext.global
+  import paulymorph.mock.configuration.json.JsonUtils._
 
   def main(args: Array[String]): Unit = {
     logger.info(s"Starting AsyncMock with args $args...")
@@ -36,7 +37,6 @@ object Main {
 
       case Seq(fileFlag, filePath, tail@_*) if List("-f", "--file").contains(fileFlag) =>
         import io.circe.parser.decode
-        import paulymorph.mock.configuration.JsonUtils._
         val parsedOpt = Try {
           val fileContents = Source.fromFile(filePath).mkString
           decode[MockConfiguration](fileContents)

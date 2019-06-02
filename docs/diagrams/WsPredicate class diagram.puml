@@ -1,0 +1,47 @@
+@startuml
+
+interface WsEventPredicate {
+  apply(actualMessage: Message): Boolean
+}
+
+interface JsonMessagePredicate {
+  comparator: (String, String) => Boolean
+  message: Json
+  apply(actualMessage: Message): Boolean
+}
+
+class WsEquals {
+    message: Json
+    comparator: (String, String) => Boolean
+}
+
+class WsContains {
+    message: Json
+    comparator: (String, String) => Boolean
+}
+
+class WsStartsWith {
+    message: Json
+    comparator: (String, String) => Boolean
+}
+
+interface CompoundWsPredicate {
+  predicates: Set[WsEventPredicate]
+}
+
+class Or {
+  predicates: Set[WsEventPredicate]
+}
+class And {
+    predicates: Set[WsEventPredicate]
+}
+
+Or -up-|> CompoundWsPredicate
+And -up-|> CompoundWsPredicate
+WsStartsWith -up-|> JsonMessagePredicate
+WsContains -up-|> JsonMessagePredicate
+WsEquals -up-|> JsonMessagePredicate
+JsonMessagePredicate --up-|> WsEventPredicate
+CompoundWsPredicate -up-|> WsEventPredicate
+
+@enduml

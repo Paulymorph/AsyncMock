@@ -1,0 +1,58 @@
+@startuml
+interface Response
+
+interface MessageLike {
+  data: Json
+  delay: Option[FiniteDuration]
+}
+
+together {
+    class SseMessage{
+    data: Json,
+                          delay: Option[FiniteDuration]
+                          eventType: Option[String]
+                          id:        Option[String]
+                          retry:     Option[Int]
+
+      toSse(): ServerSentEvent
+    }
+
+    class WsMessage{
+    data: Json
+    delay: Option[FiniteDuration]
+    toWs(): ws.Message
+    }
+}
+
+interface EventsSequenceLikeResponse {
+  events: Seq[MessageLike]
+  timeout: Option[FiniteDuration]
+}
+
+together {
+    class SseEventsResponse {
+    events: Seq[SseMessage]
+    timeout: Option[FiniteDuration]
+    }
+
+
+    class WebSocketEventsResponse {
+    events: Seq[WsMessage]
+    reactions: Seq[WsReaction]
+    timeout: Option[FiniteDuration]
+    }
+}
+
+SseMessage -u-|> MessageLike
+WsMessage -|> MessageLike
+
+EventsSequenceLikeResponse -u-|> Response
+
+
+SseEventsResponse -u-|> EventsSequenceLikeResponse
+SseEventsResponse o---> SseMessage
+
+WebSocketEventsResponse --|> EventsSequenceLikeResponse
+WebSocketEventsResponse o--> WsMessage
+
+@enduml
